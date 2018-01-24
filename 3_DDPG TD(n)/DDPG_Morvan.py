@@ -11,7 +11,7 @@ class ddpg(object):
         self.method = 'MovFan'
         self.LR_A = 0.001    # learning rate for actor
         self.LR_C = 0.002    # learning rate for critic
-        self.GAMMA = 1     # reward discount
+        self.GAMMA = 1    # reward discount
         self.TAU = 0.01      # soft replacement
         self.MEMORY_CAPACITY = 10000
         self.BATCH_SIZE = 500

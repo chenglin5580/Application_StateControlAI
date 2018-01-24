@@ -1,2 +1,2 @@
-model_checkpoint_path: "C:\\Users\\cheng\\PycharmProjects\\StateControl\\2_DDPG/data.chkp"
-all_model_checkpoint_paths: "C:\\Users\\cheng\\PycharmProjects\\StateControl\\2_DDPG/data.chkp"
+model_checkpoint_path: "C:\\Users\\cheng\\PycharmProjects\\StateControlAI\\2_DDPG/data.chkp"
+all_model_checkpoint_paths: "C:\\Users\\cheng\\PycharmProjects\\StateControlAI\\2_DDPG/data.chkp"

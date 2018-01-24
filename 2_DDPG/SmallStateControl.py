@@ -26,6 +26,15 @@ class SSCPENV(object):
             self.x = np.zeros(self.x_dim)
             return self.x
 
+    def reset_random(self):
+        if self.init_x:
+            return self.init_x
+        else:
+            self.t = 0
+            self.x = np.zeros(self.x_dim)
+            self.x = np.clip(np.random.normal(self.x, 2), -2, 2)
+            return self.x
+
     def render(self):
         pass
 
@@ -62,9 +71,8 @@ class SSCPENV(object):
         else:
             b = 0.9
             xxx = (u_norm - Penalty_bound) / (1 - Penalty_bound)
-            Satu_Penalty = -np.log2(1.000000001 - xxx) / np.log2(b) / 5
-        reward = omega + Satu_Penalty
-
+            Satu_Penalty = -np.log2(1.000000001 - xxx) / np.log2(b) / 10
+        reward = (omega + Satu_Penalty) / 500
 
         info = {}
         info['action'] = u
@@ -73,6 +81,8 @@ class SSCPENV(object):
         info['reward'] = reward
         if self.t > self.total_time:
             done = True
+            if abs(delta_x) > 1:
+                reward += - 20
         else:
             done = False
 

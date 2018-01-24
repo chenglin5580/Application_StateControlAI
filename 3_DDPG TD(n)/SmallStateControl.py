@@ -5,6 +5,7 @@ class SSCPENV(object):
     def __init__(self, x_dim=2, action_dim=1, init_x=None):
         self.x_dim = x_dim
         self.action_dim = action_dim
+        self.abound = np.array([10, 10])
         self.init_x = init_x
         self.state_dim = self.x_dim
         self.t = 0
@@ -16,11 +17,23 @@ class SSCPENV(object):
         self.x = self.reset()
         self.u_bound = 30 * np.array([-1, 1])
 
+
     def reset(self):
         if self.init_x:
             return self.init_x
         else:
-            return np.zeros(self.x_dim)
+            self.t = 0
+            self.x = np.zeros(self.x_dim)
+            return self.x
+
+    def reset_random(self):
+        if self.init_x:
+            return self.init_x
+        else:
+            self.t = 0
+            self.x = np.zeros(self.x_dim)
+            self.x = np.clip(np.random.normal(self.x, 2), -2, 2)
+            return self.x
 
     def render(self):
         pass
@@ -51,24 +64,27 @@ class SSCPENV(object):
         self.t = self.t + self.delta_t
 
         # Reward Calculation
-        b = 0.9
         u_norm = abs((u - np.mean(self.u_bound)) / abs(self.u_bound[0] - self.u_bound[1]) * 2)
         Penalty_bound = 0.75
         if u_norm < Penalty_bound:
             Satu_Penalty = 0
         else:
+            b = 0.9
             xxx = (u_norm - Penalty_bound) / (1 - Penalty_bound)
-            Satu_Penalty = -np.log2(1.000000001 - xxx) / np.log2(b) / 5
-
-        reward = Satu_Penalty
+            Satu_Penalty = -np.log2(1.01 - xxx) / np.log2(b) / 3
+        reward = (omega + Satu_Penalty) / 500
 
         info = {}
         info['action'] = u
         info['time'] = self.t
         info['u_ori'] = u_origin
         info['reward'] = reward
+        info['penalty'] = Satu_Penalty
         if self.t > self.total_time:
             done = True
+            if abs(delta_x) > 1:
+                reward += - abs(delta_x)
+
         else:
             done = False
 
