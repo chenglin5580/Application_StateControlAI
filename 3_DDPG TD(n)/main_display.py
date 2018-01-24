@@ -58,7 +58,6 @@ while True:
     omega_track.append(float(omega))
     penalty_track.append(info['penalty'])
 
-
     state_now = state_next
     reward_me += reward
 
