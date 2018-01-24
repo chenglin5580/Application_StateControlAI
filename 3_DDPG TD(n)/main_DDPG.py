@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import SmallStateControl
 from DDPG_Morvan import ddpg
+from ParaSetting import  Para_setting
 
 ############################ Object and Method  ####################################
 
@@ -30,15 +31,16 @@ ddpg = ddpg(a_dim, s_dim, a_bound, reload_flag)
 
 ###############################  Training  ####################################
 
-
-max_Episodes = 300000
+# 参数确定
+Para = Para_setting()
+max_Episodes = Para.max_Episodes
 Learning_Start = False
-var = 10  # control exploration
+var = Para.var_ini  # control exploration
 step_me = np.zeros([max_Episodes])
 reward_me = np.zeros([max_Episodes])
 
 
-
+# 循环训练
 for i in range(max_Episodes):
     state_now = env.reset()
     ep_reward = 0
@@ -49,12 +51,10 @@ for i in range(max_Episodes):
         action = np.clip(np.random.normal(action, var), 0, 20)  # add randomness to action selection for exploration
         state_next, reward, done, info = env.step(action[0])
 
-
         ddpg.store_transition(state_now, action, reward, state_next, np.array([done * 1.0]))
 
         if Learning_Start:
             ddpg.learn()
-            var *= .99998  # decay the action randomness
             RENDER = True
         else:
             if ddpg.pointer > ddpg.MEMORY_CAPACITY:
@@ -69,9 +69,11 @@ for i in range(max_Episodes):
             # if ep_reward > -300:
             break
 
+    if var > Para.var_end:
+        var *= Para.var_decend  # decay the action randomness
     reward_me[i] = ep_reward
-    if var < 1:
-        break
+    # if var < 1:
+    #     break
 
 ddpg.net_save()
 

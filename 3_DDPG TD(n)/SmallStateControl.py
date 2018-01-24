@@ -74,7 +74,7 @@ class SSCPENV(object):
         self.t = self.t + self.delta_t
 
         # Reward Calculation
-        reward = (omega + Satu_Penalty / 2) / 500
+        reward = (omega + Satu_Penalty / 3) / 500
 
         info = {}
         info['action'] = u
@@ -84,8 +84,8 @@ class SSCPENV(object):
         info['penalty'] = Satu_Penalty
         if self.t > self.total_time:
             done = True
-            # if abs(delta_x) > 1:
-            #     reward += -20 - abs(delta_x)
+            if abs(delta_x) > 1:
+                reward += - 20
         else:
             done = False
 

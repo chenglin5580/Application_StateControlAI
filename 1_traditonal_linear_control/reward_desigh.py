@@ -37,7 +37,7 @@ for i in range(0, 100000):
         y2[i] = 0
     else:
         # xxx = (x[i] - x_penalty) / (1 - x_penalty)
-        y2[i] = - 1000* (np.exp(0.1*(x2[i]-x_penalty)) -1)
+        y2[i] = - 1000* (np.exp(0.1*(x2[i]-x_penalty)) -1) /2
 
 
 
