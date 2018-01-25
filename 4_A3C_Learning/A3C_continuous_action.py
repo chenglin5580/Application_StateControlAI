@@ -45,45 +45,48 @@ class ACNet(object):
             with tf.variable_scope(scope):
                 self.s = tf.placeholder(tf.float32, [None, N_S], 'S')
                 self.a_params, self.c_params = self._build_net(scope)[-2:]
-        else:   # local net, calculate losses
+        else:   # worker, local net, calculate losses
             with tf.variable_scope(scope):
-                self.s = tf.placeholder(tf.float32, [None, N_S], 'S')
-                self.a_his = tf.placeholder(tf.float32, [None, N_A], 'A')
-                self.v_target = tf.placeholder(tf.float32, [None, 1], 'Vtarget')
+                # 网络引入
+                self.s = tf.placeholder(tf.float32, [None, N_S], 'S')   #状态
+                self.a_his = tf.placeholder(tf.float32, [None, N_A], 'A') #动作
+                self.v_target = tf.placeholder(tf.float32, [None, 1], 'Vtarget')  #目标价值
 
-                mu, sigma, self.v, self.a_params, self.c_params = self._build_net(scope)
+                # 网络构建
+                mu, sigma, self.v, self.a_params, self.c_params = self._build_net(scope)  #mu 均值 sigma 均方差
 
+                # 价值网络优化
                 td = tf.subtract(self.v_target, self.v, name='TD_error')
                 with tf.name_scope('c_loss'):
                     self.c_loss = tf.reduce_mean(tf.square(td))
 
                 with tf.name_scope('wrap_a_out'):
-                    mu, sigma = mu * A_BOUND[1], sigma + 1e-4
+                    mu, sigma = mu * A_BOUND[1], sigma + 1e-4  #归一化反映射，防止方差为零
 
-                normal_dist = tf.distributions.Normal(mu, sigma)
+                normal_dist = tf.distributions.Normal(mu, sigma)  #tf自带的正态分布函数
 
                 with tf.name_scope('a_loss'):
-                    log_prob = normal_dist.log_prob(self.a_his)
-                    exp_v = log_prob * tf.stop_gradient(td)
-                    entropy = normal_dist.entropy()  # encourage exploration
+                    log_prob = normal_dist.log_prob(self.a_his)  #概率的log值
+                    exp_v = log_prob * tf.stop_gradient(td)  #stop_gradient停止梯度传递的意思
+                    entropy = normal_dist.entropy()  # encourage exploration，香农熵，评价分布的不确定性，
                     self.exp_v = ENTROPY_BETA * entropy + exp_v
-                    self.a_loss = tf.reduce_mean(-self.exp_v)
+                    self.a_loss = tf.reduce_mean(-self.exp_v)   #actor的优化目标是价值函数最大
 
                 with tf.name_scope('choose_a'):  # use local params to choose action
-                    self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=0), A_BOUND[0], A_BOUND[1])
+                    self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=0), A_BOUND[0], A_BOUND[1])  # 根据actor给出的分布，选取动作
                 with tf.name_scope('local_grad'):
-                    self.a_grads = tf.gradients(self.a_loss, self.a_params)
-                    self.c_grads = tf.gradients(self.c_loss, self.c_params)
+                    self.a_grads = tf.gradients(self.a_loss, self.a_params)   #计算梯度
+                    self.c_grads = tf.gradients(self.c_loss, self.c_params)   #计算梯度
 
             with tf.name_scope('sync'):
-                with tf.name_scope('pull'):
+                with tf.name_scope('pull'):  #把全局的pull到本地
                     self.pull_a_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.a_params, globalAC.a_params)]
                     self.pull_c_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.c_params, globalAC.c_params)]
-                with tf.name_scope('push'):
+                with tf.name_scope('push'):  #根据本地的梯度，优化global的参数
                     self.update_a_op = OPT_A.apply_gradients(zip(self.a_grads, globalAC.a_params))
                     self.update_c_op = OPT_C.apply_gradients(zip(self.c_grads, globalAC.c_params))
 
-    def _build_net(self, scope):
+    def _build_net(self, scope):  # 网络定义
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
             l_a = tf.layers.dense(self.s, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
@@ -96,13 +99,13 @@ class ACNet(object):
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return mu, sigma, v, a_params, c_params
 
-    def update_global(self, feed_dict):  # run by a local
+    def update_global(self, feed_dict):  # 函数：执行push动作
         SESS.run([self.update_a_op, self.update_c_op], feed_dict)  # local grads applies to global net
 
-    def pull_global(self):  # run by a local
+    def pull_global(self):  # 函数：执行pull动作
         SESS.run([self.pull_a_params_op, self.pull_c_params_op])
 
-    def choose_action(self, s):  # run by a local
+    def choose_action(self, s):  # 函数：选择动作action
         s = s[np.newaxis, :]
         return SESS.run(self.A, {self.s: s})[0]
 
@@ -114,18 +117,18 @@ class Worker(object):
         self.AC = ACNet(name, globalAC)
 
     def work(self):
-        global GLOBAL_RUNNING_R, GLOBAL_EP
+        global GLOBAL_RUNNING_R, GLOBAL_EP  #GLOBAL_EP 是Global的片段个数
         total_step = 1
-        buffer_s, buffer_a, buffer_r = [], [], []
+        buffer_s, buffer_a, buffer_r = [], [], []  #类似于memory，存储运行轨迹
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
             s = self.env.reset()
             ep_r = 0
-            for ep_t in range(MAX_EP_STEP):
-                # if self.name == 'W_0':
-                #     self.env.render()
-                a = self.AC.choose_action(s)
+            for ep_t in range(MAX_EP_STEP):  #MAX_EP_STEP每个片段的最大个数
+                if self.name == 'W_0':
+                    self.env.render()
+                a = self.AC.choose_action(s)  #选取动作
                 s_, r, done, info = self.env.step(a)
-                done = True if ep_t == MAX_EP_STEP - 1 else False
+                done = True if ep_t == MAX_EP_STEP - 1 else False  #算法运行结束条件
 
                 ep_r += r
                 buffer_s.append(s)
@@ -155,7 +158,7 @@ class Worker(object):
 
                 s = s_
                 total_step += 1
-                if done:
+                if done:         # 每个片段结束，输出一下结果
                     if len(GLOBAL_RUNNING_R) == 0:  # record running episode reward
                         GLOBAL_RUNNING_R.append(ep_r)
                     else:
@@ -172,14 +175,14 @@ if __name__ == "__main__":
     SESS = tf.Session()
 
     with tf.device("/cpu:0"):
-        OPT_A = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')
-        OPT_C = tf.train.RMSPropOptimizer(LR_C, name='RMSPropC')
-        GLOBAL_AC = ACNet(GLOBAL_NET_SCOPE)  # we only need its params
+        OPT_A = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')   #actor优化器定义
+        OPT_C = tf.train.RMSPropOptimizer(LR_C, name='RMSPropC')   #critic优化器定义
+        GLOBAL_AC = ACNet(GLOBAL_NET_SCOPE)  # 定义global ， 不过只需要它的参数空间
         workers = []
         # Create worker
-        for i in range(N_WORKERS):
-            i_name = 'W_%i' % i   # worker name
-            workers.append(Worker(i_name, GLOBAL_AC))
+        for i in range(N_WORKERS):  # N_WORKERS 为cpu个数
+            i_name = 'W_%i' % i   # worker name，形如W_1
+            workers.append(Worker(i_name, GLOBAL_AC))  #添加名字为W_i的worker
 
     COORD = tf.train.Coordinator()
     SESS.run(tf.global_variables_initializer())

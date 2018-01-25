@@ -39,6 +39,7 @@ class SSCPENV(object):
 
     def step(self, omega):
 
+        omega = omega[0]
         # 控制律
         x = self.x[0]
         x_dot = self.x[1]
@@ -74,7 +75,7 @@ class SSCPENV(object):
         self.t = self.t + self.delta_t
 
         # Reward Calculation
-        reward = (omega + Satu_Penalty / 5) / 500
+        reward = (omega + Satu_Penalty) / 500
 
         info = {}
         info['action'] = u
@@ -84,8 +85,8 @@ class SSCPENV(object):
         info['penalty'] = Satu_Penalty
         if self.t > self.total_time:
             done = True
-            # if abs(delta_x) > 1:
-            #     reward += - 20
+            if abs(delta_x) > 1:
+                reward += - 20
         else:
             done = False
 
