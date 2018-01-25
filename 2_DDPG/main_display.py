@@ -34,12 +34,16 @@ ddpg = ddpg(a_dim, s_dim, a_bound, reload_flag)
 state_now = env.reset()
 
 i_index = 0
+
+
+
 state_track = []
 action_track = []
 time_track = []
 action_ori_track = []
 reward_track = []
 omega_track = []
+penalty_track = []
 reward_me = 0
 while True:
 
@@ -52,7 +56,7 @@ while True:
     action_ori_track.append(info['u_ori'])
     reward_track.append(info['reward'])
     omega_track.append(float(omega))
-
+    penalty_track.append(info['penalty'])
 
     state_now = state_next
     reward_me += reward
@@ -82,6 +86,11 @@ plt.figure(4)
 plt.plot(time_track, omega_track)
 plt.grid()
 plt.title('omega')
+
+plt.figure(5)
+plt.plot(time_track, penalty_track)
+plt.grid()
+plt.title('penalty')
 
 
 plt.show()

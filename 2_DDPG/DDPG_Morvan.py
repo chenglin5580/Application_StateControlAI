@@ -2,6 +2,7 @@
 import tensorflow as tf
 import numpy as np
 import sys
+tf.set_random_seed(2)
 ###############################  DDPG  ####################################
 
 class ddpg(object):
@@ -9,12 +10,12 @@ class ddpg(object):
 
         # DDPG网络参数
         self.method = 'MovFan'
-        self.LR_A = 0.001    # learning rate for actor
-        self.LR_C = 0.002    # learning rate for critic
-        self.GAMMA = 1     # reward discount
+        self.LR_A = 0.0001    # learning rate for actor
+        self.LR_C = 0.0002    # learning rate for critic
+        self.GAMMA = 0.9    # reward discount
         self.TAU = 0.01      # soft replacement
         self.MEMORY_CAPACITY = 10000
-        self.BATCH_SIZE = 500
+        self.BATCH_SIZE = 512
         self.pointer = 0
         self.a_replace_counter, self.c_replace_counter = 0, 0
         self.iteration = 0
@@ -33,14 +34,14 @@ class ddpg(object):
 
         with tf.variable_scope('Actor'):
             self.a = self._build_a(self.S, scope='eval', trainable=True)
-            a_ = self._build_a(self.S_, scope='target', trainable=False)
+            self.a_ = self._build_a(self.S_, scope='target', trainable=False)
             # tf.summary.histogram('Actor/eval', self.a)
             # tf.summary.histogram('Actor/target', a_)
             self.ae_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='Actor/eval')
             self.at_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='Actor/target')
         with tf.variable_scope('Critic'):
             q = self._build_c(self.S, self.a, scope='eval', trainable=True)
-            q_ = self._build_c(self.S_, a_, scope='target', trainable=False)
+            q_ = self._build_c(self.S_, self.a_, scope='target', trainable=False)
             # tf.summary.histogram('Critic/eval', q)
             # tf.summary.histogram('Critic/target', q_)
             self.ce_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='Critic/eval')
@@ -110,7 +111,7 @@ class ddpg(object):
 
     def _build_c(self, s, a, scope, trainable):
         with tf.variable_scope(scope):
-            n_l1 = 30
+            n_l1 = 100
             w1_s = tf.get_variable('w1_s', [self.s_dim, n_l1], trainable=trainable)
             w1_a = tf.get_variable('w1_a', [self.a_dim, n_l1], trainable=trainable)
             b1 = tf.get_variable('b1', [1, n_l1], trainable=trainable)
