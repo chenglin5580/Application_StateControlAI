@@ -13,6 +13,7 @@ import tensorflow as tf
 import numpy as np
 import gym
 import os
+import sys
 import shutil
 import matplotlib.pyplot as plt
 import SmallStateControl
@@ -24,7 +25,7 @@ OUTPUT_GRAPH = True
 LOG_DIR = './log'
 N_WORKERS = multiprocessing.cpu_count()
 MAX_EP_STEP = 600
-MAX_GLOBAL_EP = 2000
+MAX_GLOBAL_EP = 100
 GLOBAL_NET_SCOPE = 'Global_Net'
 UPDATE_GLOBAL_ITER = 50
 GAMMA = 0.9
@@ -33,6 +34,7 @@ LR_A = 0.0001    # learning rate for actor
 LR_C = 0.001    # learning rate for critic
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
+modelpath = sys.path[0] + '/my_net/data.chkp'
 
 env = SmallStateControl.SSCPENV()
 
@@ -54,6 +56,7 @@ class ACNet(object):
 
             with tf.name_scope('choose_a'):  # use local params to choose action
                 self.A = tf.clip_by_value(mu, A_BOUND[0], A_BOUND[1])  # 根据actor给出的分布，选取动作
+
 
         else:   # worker, local net, calculate losses
             with tf.variable_scope(scope):
@@ -120,6 +123,7 @@ class ACNet(object):
         return SESS.run(self.A, {self.s: s})[0]
 
 
+
 class Worker(object):
     def __init__(self, name, globalAC):
         self.env = SmallStateControl.SSCPENV()
@@ -184,6 +188,7 @@ class Worker(object):
 if __name__ == "__main__":
     SESS = tf.Session()
 
+
     with tf.device("/cpu:0"):
         OPT_A = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')   #actor优化器定义
         OPT_C = tf.train.RMSPropOptimizer(LR_C, name='RMSPropC')   #critic优化器定义
@@ -194,28 +199,9 @@ if __name__ == "__main__":
             i_name = 'W_%i' % i   # worker name，形如W_1
             workers.append(Worker(i_name, GLOBAL_AC))  #添加名字为W_i的worker
 
-    COORD = tf.train.Coordinator()
-    SESS.run(tf.global_variables_initializer())
+    actor_saver = tf.train.Saver()
 
-    if OUTPUT_GRAPH:
-        if os.path.exists(LOG_DIR):
-            shutil.rmtree(LOG_DIR)
-        tf.summary.FileWriter(LOG_DIR, SESS.graph)
-
-    worker_threads = []
-    for worker in workers:
-        job = lambda: worker.work()
-        t = threading.Thread(target=job)
-        t.start()
-        worker_threads.append(t)
-    COORD.join(worker_threads)
-
-    plt.figure(6)
-    plt.plot(np.arange(len(GLOBAL_RUNNING_R)), GLOBAL_RUNNING_R)
-    plt.xlabel('step')
-    plt.ylabel('Total moving reward')
-
-
+    actor_saver.restore(SESS, modelpath)
 
 ###############################  test  ####################################
 
