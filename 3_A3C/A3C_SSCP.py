@@ -17,6 +17,8 @@ import shutil
 import matplotlib.pyplot as plt
 import SmallStateControl
 
+tf.set_random_seed(2)
+
 GAME = 'Pendulum-v0'
 OUTPUT_GRAPH = True
 LOG_DIR = './log'
@@ -50,13 +52,8 @@ class ACNet(object):
                 with tf.name_scope('wrap_a_out'):
                     mu, sigma = mu * A_BOUND[1], sigma + 1e-4  #归一化反映射，防止方差为零
 
-                normal_dist = tf.distributions.Normal(mu, sigma)  # tf自带的正态分布函数
-
             with tf.name_scope('choose_a'):  # use local params to choose action
-                self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=0), A_BOUND[0], A_BOUND[1])  # 根据actor给出的分布，选取动作
-
-
-
+                self.A = tf.clip_by_value(mu, A_BOUND[0], A_BOUND[1])  # 根据actor给出的分布，选取动作
 
         else:   # worker, local net, calculate losses
             with tf.variable_scope(scope):
