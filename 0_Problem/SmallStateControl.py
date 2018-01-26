@@ -16,6 +16,7 @@ class SSCPENV(object):
         self.total_time = 5
         self.x = self.reset()
         self.u_bound = 30 * np.array([-1, 1])
+        self.swith_penalty = -10 / 500
 
     def reset(self):
         if self.init_x:
@@ -47,7 +48,9 @@ class SSCPENV(object):
         x_dot = self.x[1]
         delta_x = x - self.xd
         delta_x_dot = x_dot - self.xd_dot
-        u = - 1 * x - 3 - omega ** 2 * delta_x - 2 * omega * delta_x_dot + self.xd_dot2
+        a = 2
+        b = 5
+        u = - a * x - b - omega ** 2 * delta_x - 2 * omega * delta_x_dot + self.xd_dot2
         u_origin = u
 
         # Penalty Calculation
@@ -69,9 +72,9 @@ class SSCPENV(object):
 
 
         # 微分方程
-        A = np.array([[0, 1], [1, 0]])
+        A = np.array([[0, 1], [a, 0]])
         B = np.array([0, 1])
-        B_con = np.array([0, 3])
+        B_con = np.array([0, b])
         x_dot = np.dot(A, self.x) + np.dot(B, u) + B_con
         self.x += self.delta_t * x_dot
         self.t = self.t + self.delta_t
@@ -88,7 +91,7 @@ class SSCPENV(object):
         if self.t > self.total_time:
             done = True
             if abs(delta_x) > 1:
-                reward += - 20
+                reward += - delta_x **2
         else:
             done = False
 

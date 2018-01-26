@@ -271,5 +271,4 @@ plt.plot(time_track, penalty_track)
 plt.grid()
 plt.title('penalty')
 
-
 plt.show()

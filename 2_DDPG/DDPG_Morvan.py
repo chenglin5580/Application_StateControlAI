@@ -19,7 +19,7 @@ class ddpg(object):
         self.pointer = 0
         self.a_replace_counter, self.c_replace_counter = 0, 0
         self.iteration = 0
-        self.modelpath = sys.path[0] + '/data.chkp'
+        self.modelpath = sys.path[0] + '/my_net/data.chkp'
 
 
         # DDPG构建
