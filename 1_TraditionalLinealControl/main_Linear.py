@@ -38,7 +38,7 @@ reward_track = []
 reward_me = 0
 while True:
 
-    omega = 3
+    omega = 5
     state_next, reward, done, info = env.step(omega)
 
     state_track.append(state_now.copy())
