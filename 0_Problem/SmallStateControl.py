@@ -48,7 +48,7 @@ class SSCPENV(object):
         x_dot = self.x[1]
         delta_x = x - self.xd
         delta_x_dot = x_dot - self.xd_dot
-        a = 2
+        a = 3
         b = 5
         u = - a * x - b - omega ** 2 * delta_x - 2 * omega * delta_x_dot + self.xd_dot2
         u_origin = u
@@ -91,7 +91,10 @@ class SSCPENV(object):
         if self.t > self.total_time:
             done = True
             if abs(delta_x) > 1:
-                reward += - delta_x **2
+                reward += - 20
+                # reward += - delta_x **2
+
+
         else:
             done = False
 
