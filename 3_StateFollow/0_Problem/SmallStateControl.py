@@ -5,7 +5,7 @@ class SSCPENV(object):
     def __init__(self, x_dim=2, action_dim=1, init_x=None):
         self.x_dim = x_dim
         self.action_dim = action_dim
-        self.abound = np.array([10, 10])
+        self.abound = np.array([0, 20])
         self.init_x = init_x
         self.state_dim = self.x_dim
         self.t = 0
@@ -88,6 +88,7 @@ class SSCPENV(object):
         info['u_ori'] = u_origin
         info['reward'] = reward
         info['penalty'] = Satu_Penalty
+        info['omega'] = omega
         if self.t > self.total_time:
             done = True
             # if abs(delta_x) > 1:

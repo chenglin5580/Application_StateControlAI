@@ -1,0 +1,2 @@
+model_checkpoint_path: "C:\\Users\\cheng\\PycharmProjects\\StateControlAI\\3_StateFollow\\4_D3QN/my_net/data.chkp"
+all_model_checkpoint_paths: "C:\\Users\\cheng\\PycharmProjects\\StateControlAI\\3_StateFollow\\4_D3QN/my_net/data.chkp"

@@ -2,38 +2,27 @@ import numpy as np
 
 
 class SSCPENV(object):
-    def __init__(self, x_dim=2, action_dim=1, init_x=None):
-        self.x_dim = x_dim
-        self.action_dim = action_dim
-        self.abound = np.array([10, 10])
-        self.init_x = init_x
-        self.state_dim = self.x_dim
-        self.t = 0
-        self.delta_t = 0.01
-        self.xd = 5
+    def __init__(self, x_dim=2, action_dim=1):
+        self.xd = 0
         self.xd_dot = 0
         self.xd_dot2 = 0
+        self.x_dim = x_dim
+        # self.state = self.reset()
+        self.state = np.zeros(5)
+        self.state_dim = len(self.state)
+        self.action_dim = action_dim
+        self.abound = np.array([0, 20])
+        self.t = 0
+        self.delta_t = 0.01
         self.total_time = 5
-        self.x = self.reset()
         self.u_bound = 30 * np.array([-1, 1])
-        self.swith_penalty = -10 / 500
 
     def reset(self):
-        if self.init_x:
-            return self.init_x
-        else:
-            self.t = 0
-            self.x = np.zeros(self.x_dim)
-            return self.x
-
-    def reset_random(self):
-        if self.init_x:
-            return self.init_x
-        else:
-            self.t = 0
-            self.x = np.zeros(self.x_dim)
-            self.x = np.clip(np.random.normal(self.x, 2), -2, 2)
-            return self.x
+        self.t = 0
+        self.x = np.zeros(self.x_dim)
+        self.x[0] = 5
+        self.state = self.get_state()
+        return self.state
 
     def render(self):
         pass
@@ -44,13 +33,9 @@ class SSCPENV(object):
                 omega = omega[0]
 
         # 控制律
-        x = self.x[0]
-        x_dot = self.x[1]
-        delta_x = x - self.xd
-        delta_x_dot = x_dot - self.xd_dot
         a = 1
         b = 3
-        u = - a * x - b - omega ** 2 * delta_x - 2 * omega * delta_x_dot + self.xd_dot2
+        u = - a * self.x[0] - b - omega ** 2 * self.delta_x - 2 * omega * self.delta_x_dot + self.xd_dot2
         u_origin = u
 
         # Penalty Calculation
@@ -97,4 +82,22 @@ class SSCPENV(object):
             done = False
 
         # Return
-        return self.x, reward, done, info
+        self.state = self.get_state()
+        return self.state, reward, done, info
+
+    def get_state(self):
+
+        self.delta_x = self.x[0] - self.xd
+        self.delta_x_dot = self.x[1] - self.xd_dot
+        delta_x_All = np.array([self.delta_x, self.delta_x_dot, self.xd_dot2])
+        # self.state = []
+        # self.state = np.array(np.hstack((self.x, delta_x_All))).reshape(5)
+        self.state[0] = self.x[0]
+        self.state[1] = self.x[1]
+        self.state[2] = self.delta_x
+        self.state[3] = self.delta_x_dot
+        self.state[4] = self.xd_dot2
+        return self.state
+
+
+

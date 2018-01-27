@@ -1,46 +1,43 @@
-"""
-Asynchronous Advantage Actor Critic (A3C) with continuous action space, Reinforcement Learning.
-The Pendulum example.
-View more on my tutorial page: https://morvanzhou.github.io/tutorials/
-Using:
-tensorflow r1.3
-gym 0.8.0
-"""
 
+
+########################### Package  Import  #################################
 import multiprocessing
 import threading
 import tensorflow as tf
 import numpy as np
-import gym
 import os
 import sys
 import shutil
 import matplotlib.pyplot as plt
-import StateStabilizationProblem
-
+# from SmallStateControl import SSCPENV as Object_AI  # 程林， 状态跟踪
+from StateStabilizationProblem import SSCPENV as Object_AI # 程林， 状态镇定
 tf.set_random_seed(2)
 
-GAME = 'Pendulum-v0'
-OUTPUT_GRAPH = False
-LOG_DIR = './log'
-N_WORKERS = multiprocessing.cpu_count()
-MAX_EP_STEP = 600
-MAX_GLOBAL_EP = 1000
-GLOBAL_NET_SCOPE = 'Global_Net'
-UPDATE_GLOBAL_ITER = 50
-GAMMA = 0.9
-ENTROPY_BETA = 0.01
-LR_A = 0.0001    # learning rate for actor
-LR_C = 0.001    # learning rate for critic
+########################### User Setting  #################################
+
+Training_flag = True                                # True 训练  False Displau
+OUTPUT_GRAPH = False                                # True 输出tensorboard  False 不输出
+LOG_DIR = './log'                                   # tensorboard 输出地址
+N_WORKERS = multiprocessing.cpu_count()             # cpu数目
+MAX_EP_STEP = 600                                   # 片段长度
+MAX_GLOBAL_EP = 2000                                # 总迭代片段数目
+GLOBAL_NET_SCOPE = 'Global_Net'                     # Global Actor-Critic 标志
+UPDATE_GLOBAL_ITER = 50                             # A3C pull/Push 间隔
+GAMMA = 0.9                                         #
+ENTROPY_BETA = 0.01                                 # exploration
+LR_A = 0.0001                                       # learning rate for actor
+LR_C = 0.001                                        # learning rate for critic
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
-modelpath = sys.path[0] + '/my_net/data.chkp'
+modelpath = sys.path[0] + '/my_net/data.chkp'       # 权重存放地址
 
-env = StateStabilizationProblem.SSPENV()
-N_S = env.state_dim
-N_A = env.action_dim
-A_BOUND = [0, 20]
 
+env = Object_AI()                                   # environment
+N_S = env.state_dim                                 # state维度
+N_A = env.action_dim                                # action维度
+A_BOUND = env.abound - np.mean(env.abound)          # action范围
+
+########################### Method  #################################
 
 class ACNet(object):
     def __init__(self, scope, globalAC=None):
@@ -51,7 +48,7 @@ class ACNet(object):
                 mu, sigma, self.v, self.a_params, self.c_params = self._build_net(scope)
 
                 with tf.name_scope('wrap_a_out'):
-                    mu = mu * abs(A_BOUND[1]-A_BOUND[0])/2 + np.mean(A_BOUND)  #归一化反映射，防止方差为零
+                    mu = mu * A_BOUND[1]  #归一化反映射，防止方差为零
 
             with tf.name_scope('choose_a'):  # use local params to choose action
                 self.A = tf.clip_by_value(mu, A_BOUND[0], A_BOUND[1])  # 根据actor给出的分布，选取动作
@@ -73,8 +70,8 @@ class ACNet(object):
                     self.c_loss = tf.reduce_mean(tf.square(td))
 
                 with tf.name_scope('wrap_a_out'):
-                    mu, sigma = mu * abs(A_BOUND[1]-A_BOUND[0])/2+np.mean(A_BOUND), sigma + 1e-4  #归一化反映射，防止方差为零
-                    self.AS = mu
+                    mu, sigma = mu * A_BOUND[1], sigma + 1e-4  #归一化反映射，防止方差为零
+
 
                 normal_dist = tf.distributions.Normal(mu, sigma)  #tf自带的正态分布函数
 
@@ -122,14 +119,11 @@ class ACNet(object):
         s = s[np.newaxis, :]
         return SESS.run(self.A, {self.s: s})[0]
 
-    def choose_action_S(self, s):  # 函数：选择动作action
-        s = s[np.newaxis, :]
-        return SESS.run(self.AS, {self.s: s})[0]
 
 
 class Worker(object):
     def __init__(self, name, globalAC):
-        self.env = StateStabilizationProblem.SSPENV()
+        self.env = Object_AI()
         self.name = name
         self.AC = ACNet(name, globalAC)
 
@@ -143,8 +137,9 @@ class Worker(object):
             for ep_t in range(MAX_EP_STEP):  #MAX_EP_STEP每个片段的最大个数
                 # if self.name == 'W_0':
                 #     self.env.render()
-                a = self.AC.choose_action(s)  #选取动作
+                a = self.AC.choose_action(s)+np.mean(env.abound)  #选取动作
                 s_, r, done, info = self.env.step(a)
+
                 # done = True if ep_t == MAX_EP_STEP - 1 else False  #算法运行结束条件
 
                 ep_r += r
@@ -189,8 +184,9 @@ class Worker(object):
                     break
 
 if __name__ == "__main__":
-    SESS = tf.Session()
 
+    SESS = tf.Session()
+    ###############################  Train  ####################################
 
     with tf.device("/cpu:0"):
         OPT_A = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')   #actor优化器定义
@@ -204,29 +200,33 @@ if __name__ == "__main__":
 
     actor_saver = tf.train.Saver()
 
-    COORD = tf.train.Coordinator()
-    SESS.run(tf.global_variables_initializer())
 
-    if OUTPUT_GRAPH:
-        if os.path.exists(LOG_DIR):
-            shutil.rmtree(LOG_DIR)
-        tf.summary.FileWriter(LOG_DIR, SESS.graph)
+    if Training_flag:
+        COORD = tf.train.Coordinator()
+        SESS.run(tf.global_variables_initializer())
 
-    worker_threads = []
-    for worker in workers:
-        job = lambda: worker.work()
-        t = threading.Thread(target=job)
-        t.start()
-        worker_threads.append(t)
-    COORD.join(worker_threads)
+        if OUTPUT_GRAPH:
+            if os.path.exists(LOG_DIR):
+                shutil.rmtree(LOG_DIR)
+            tf.summary.FileWriter(LOG_DIR, SESS.graph)
 
-    plt.figure(6)
-    plt.plot(np.arange(len(GLOBAL_RUNNING_R)), GLOBAL_RUNNING_R)
-    plt.xlabel('step')
-    plt.ylabel('Total moving reward')
+        worker_threads = []
+        for worker in workers:
+            job = lambda: worker.work()
+            t = threading.Thread(target=job)
+            t.start()
+            worker_threads.append(t)
+        COORD.join(worker_threads)
 
+        plt.figure(6)
+        plt.plot(np.arange(len(GLOBAL_RUNNING_R)), GLOBAL_RUNNING_R)
+        plt.xlabel('step')
+        plt.ylabel('Total moving reward')
 
-    actor_saver.save(SESS, modelpath)
+        actor_saver.save(SESS, modelpath)
+    else:
+        actor_saver.restore(SESS, modelpath)
+
 
     ###############################  test  ####################################
 
@@ -245,7 +245,7 @@ if __name__ == "__main__":
 
     while True:
 
-        omega = GLOBAL_AC.choose_action(state_now)
+        omega = GLOBAL_AC.choose_action(state_now) + np.mean(env.abound)
         # omega = workers[0].AC.choose_action_S(state_now)
 
         state_next, reward, done, info = env.step(omega)
@@ -256,7 +256,7 @@ if __name__ == "__main__":
         action_ori_track.append(info['u_ori'])
         reward_track.append(info['reward'])
         omega_track.append(float(omega))
-        penalty_track.append(info['penalty'])
+        # penalty_track.append(info['penalty'])
 
 
         state_now = state_next
@@ -288,10 +288,10 @@ if __name__ == "__main__":
     plt.grid()
     plt.title('omega')
 
-    plt.figure(5)
-    plt.plot(time_track, penalty_track)
-    plt.grid()
-    plt.title('penalty')
+    # plt.figure(5)
+    # plt.plot(time_track, penalty_track)
+    # plt.grid()
+    # plt.title('penalty')
 
 
     plt.show()

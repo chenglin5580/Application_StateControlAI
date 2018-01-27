@@ -52,7 +52,7 @@ class ACNet(object):
                 mu, sigma, self.v, self.a_params, self.c_params = self._build_net(scope)
 
                 with tf.name_scope('wrap_a_out'):
-                    mu, sigma = mu * A_BOUND[1], sigma + 1e-4  #归一化反映射，防止方差为零
+                    mu, sigma = mu*10+10, sigma + 1e-4  #归一化反映射，防止方差为零
 
             with tf.name_scope('choose_a'):  # use local params to choose action
                 self.A = tf.clip_by_value(mu, A_BOUND[0], A_BOUND[1])  # 根据actor给出的分布，选取动作
@@ -74,7 +74,7 @@ class ACNet(object):
                     self.c_loss = tf.reduce_mean(tf.square(td))
 
                 with tf.name_scope('wrap_a_out'):
-                    mu, sigma = mu * A_BOUND[1], sigma + 1e-4  #归一化反映射，防止方差为零
+                    mu, sigma = mu*20, sigma + 1e-4  #归一化反映射，防止方差为零
 
                 normal_dist = tf.distributions.Normal(mu, sigma)  #tf自带的正态分布函数
 
