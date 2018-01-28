@@ -1,6 +1,7 @@
-from SmallStateControlDis import SSCPENV
 import matplotlib.pyplot as plt
 from D3QN import DQN
+
+from SmallStateControlDis import SSCPENV
 
 if __name__ == "__main__":
     # maze game
