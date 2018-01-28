@@ -5,7 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/3_StateFollow/0_Problem" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/3_StateFollow/1_Method" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.5 (StateControlAI)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.5.4 (C:\Anaconda3\envs\tensorflow\python.exe)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">

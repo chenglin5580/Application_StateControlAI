@@ -12,7 +12,7 @@ import os
 import shutil
 import matplotlib.pyplot as plt
 import sys
-
+import copy
 tf.set_random_seed(2)
 
 
@@ -37,7 +37,6 @@ class Para:
         self.LR_A = LR_A  # learning rate for actor
         self.LR_C = LR_C  # learning rate for critic
         self.modelpath = sys.path[0] + '/my_net/data.chkp'
-        self.env = env
         self.N_S = env.state_dim
         self.N_A = env.action_dim
         # self.A_BOUND = env.abound - np.mean(env.abound)
@@ -157,18 +156,19 @@ class Worker(object):
     def __init__(self, name, globalAC, para):
         self.name = name
         self.para = para
+        self.env_l = copy.deepcopy(self.para.env)
         self.AC = ACNet(name, para, globalAC)
 
     def work(self):
         total_step = 1
         buffer_s, buffer_a, buffer_r = [], [], []  # 类似于memory，存储运行轨迹
         while not self.para.COORD.should_stop() and self.para.GLOBAL_EP < self.para.MAX_GLOBAL_EP:
-            s = self.para.env.reset()
+            s = self.env_l.reset()
             ep_r = 0
-            # for ep_t in range(self.para.MAX_EP_STEP):  # MAX_EP_STEP每个片段的最大个
-            while True:
+            for ep_t in range(self.para.MAX_EP_STEP):  # MAX_EP_STEP每个片段的最大个
+            # while True:
                 a = self.AC.choose_action(s) + 10  # 选取动作
-                s_, r, done, info = self.para.env.step(a)
+                s_, r, done, info = self.env_l.step(a)
                 # done = True if ep_t == MAX_EP_STEP - 1 else False  #算法运行结束条件
 
                 ep_r += r
@@ -209,6 +209,7 @@ class Worker(object):
                         self.name,
                         "Ep:", self.para.GLOBAL_EP,
                         "| Ep_r: %.4f" % self.para.GLOBAL_RUNNING_R[-1],
+                        "total_step", ep_t
                     )
                     self.para.GLOBAL_EP += 1
                     break
