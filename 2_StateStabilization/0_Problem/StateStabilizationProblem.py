@@ -33,8 +33,8 @@ class SSCPENV(object):
                 omega = omega[0]
 
         # 控制律
-        a = 1
-        b = 3
+        a = 0
+        b = 0
         u = - a * self.x[0] - b - omega ** 2 * self.delta_x - 2 * omega * self.delta_x_dot + self.xd_dot2
         u_origin = u
 

@@ -80,7 +80,7 @@ class SSCPENV(object):
         self.t = self.t + self.delta_t
 
         # Reward Calculation
-        reward = (omega + Satu_Penalty/3) / 500
+        reward = (omega + Satu_Penalty/10) / 500
 
         info = {}
         info['action'] = u
