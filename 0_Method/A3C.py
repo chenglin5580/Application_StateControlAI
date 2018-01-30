@@ -40,7 +40,7 @@ class Para:
         self.N_S = env.state_dim
         self.N_A = env.action_dim
         # self.A_BOUND = env.abound - np.mean(env.abound)
-        self.A_BOUND = np.array([0, 20])
+        self.A_BOUND = np.array([1, 20])
         self.GLOBAL_RUNNING_R = []
         self.GLOBAL_EP = 0
 
@@ -205,12 +205,13 @@ class ACNet(object):
         w_init = tf.random_normal_initializer(0., .1)
         # w_init = None
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 30, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            l_a = tf.layers.dense(self.s, 50, tf.nn.relu6, kernel_initializer=w_init, name='la')
             mu_1 = tf.layers.dense(l_a, self.para.N_A, tf.nn.tanh, kernel_initializer=w_init, name='mu')
             mu = tf.multiply(mu_1, 10, name='scaled_a') + 10
-            sigma = tf.layers.dense(l_a, self.para.N_A, tf.nn.softplus, kernel_initializer=w_init, name='sigma')
+            sigma_1 = tf.layers.dense(l_a, self.para.N_A, tf.nn.softplus, kernel_initializer=w_init, name='sigma')
+            sigma = tf.multiply(sigma_1, 10, name='scaled_a')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 30, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            l_c = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
@@ -240,6 +241,7 @@ class Worker(object):
         while not self.para.COORD.should_stop() and self.para.GLOBAL_EP < self.para.MAX_GLOBAL_EP:
             s = self.env_l.reset()
             ep_r = 0
+            ep_a = []
             for ep_t in range(self.para.MAX_EP_STEP):  # MAX_EP_STEP每个片段的最大个
             # while True:
                 a = self.AC.choose_action(s)  # 选取动作
@@ -250,6 +252,7 @@ class Worker(object):
                 buffer_s.append(s)
                 buffer_a.append(a)
                 buffer_r.append(r)  # normalize
+                ep_a.append(a)
 
                 if total_step % self.para.UPDATE_GLOBAL_ITER == 0 or done:  # update global and assign to local net
                     if done:
@@ -276,6 +279,8 @@ class Worker(object):
                 s = s_
                 total_step += 1
                 if done:  # 每个片段结束，输出一下结果
+                    if self.name == 'W_0':
+                        print(np.array(ep_a[::100]))
                     # if len(GLOBAL_RUNNING_R) == 0:  # record running episode reward
                     self.para.GLOBAL_RUNNING_R.append(ep_r)
                     # else:

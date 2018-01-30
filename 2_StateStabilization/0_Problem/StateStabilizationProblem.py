@@ -94,9 +94,9 @@ class SSCPENV(object):
         # self.state = np.array(np.hstack((self.x, delta_x_All))).reshape(5)
         self.state[0] = self.x[0]
         self.state[1] = self.x[1]
-        self.state[2] = self.delta_x
-        self.state[3] = self.delta_x_dot
-        self.state[4] = self.xd_dot2
+        self.state[2] = self.t
+        # self.state[3] = self.delta_x_dott
+        # self.state[4] = self.xd_dot2
         return self.state
 
 
