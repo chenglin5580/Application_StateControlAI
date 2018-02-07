@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 from D3QN import DQN
 
-from SmallStateControlDis import SSCPENV
+from SS_Pro_Dis import SSCPENV
 
 if __name__ == "__main__":
     # maze game
     env = SSCPENV()
-    RL = DQN(n_actions=env.n_action,
-             n_features=2,
+    RL = DQN(n_actions=env.action_dim,
+             n_features=env.state_dim,
              learning_rate=0.01,
              gamma=0.9,
              e_greedy_end=0.1,
@@ -17,7 +17,7 @@ if __name__ == "__main__":
              output_graph=False,
              double=True,
              dueling=True,
-             train=True
+             train=False
              )
     # train part
     if RL.train:

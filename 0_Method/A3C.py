@@ -279,8 +279,8 @@ class Worker(object):
                 s = s_
                 total_step += 1
                 if done:  # 每个片段结束，输出一下结果
-                    if self.name == 'W_0':
-                        print(np.array(ep_a[::100]))
+                    # if self.name == 'W_0':
+                        # print(np.array(ep_a[::100]))
                     # if len(GLOBAL_RUNNING_R) == 0:  # record running episode reward
                     self.para.GLOBAL_RUNNING_R.append(ep_r)
                     # else:
@@ -288,6 +288,7 @@ class Worker(object):
                     print(
                         self.name,
                         "Ep:", self.para.GLOBAL_EP,
+                        "x0: %.2f", self.env_l.x0[0],
                         "| Ep_r: %.4f" % self.para.GLOBAL_RUNNING_R[-1],
                         "total_step", ep_t
                     )

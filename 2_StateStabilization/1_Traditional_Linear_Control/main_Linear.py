@@ -7,7 +7,7 @@ Designer: Lin Cheng  2018.01.22
 ########################### Package  Input  #################################
 
 import matplotlib.pyplot as plt
-from StateStabilizationProblem import SSCPENV as Object_AI # 程林， 状态镇定
+from SS_Pro_Con import SSCPENV as Object_AI # 程林， 状态镇定
 
 ############################ Object and Method  ####################################
 

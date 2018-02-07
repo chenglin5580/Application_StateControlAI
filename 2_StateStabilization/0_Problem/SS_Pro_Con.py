@@ -7,8 +7,8 @@ class SSCPENV(object):
         self.xd_dot = 0
         self.xd_dot2 = 0
         self.x_dim = x_dim
-        # self.state = self.reset()
         self.state = np.zeros(5)
+        self.state = self.reset()
         self.state_dim = len(self.state)
         self.action_dim = action_dim
         self.abound = np.array([0, 20])
@@ -73,6 +73,7 @@ class SSCPENV(object):
         info['u_ori'] = u_origin
         info['reward'] = reward
         info['penalty'] = Satu_Penalty
+        info['omega'] = omega
         if self.t > self.total_time:
             done = True
             # if abs(delta_x) > 1:
@@ -89,14 +90,14 @@ class SSCPENV(object):
 
         self.delta_x = self.x[0] - self.xd
         self.delta_x_dot = self.x[1] - self.xd_dot
-        delta_x_All = np.array([self.delta_x, self.delta_x_dot, self.xd_dot2])
+        # delta_x_All = np.array([self.delta_x, self.delta_x_dot, self.xd_dot2])
         # self.state = []
-        # self.state = np.array(np.hstack((self.x, delta_x_All))).reshape(5)
+        # self.state = np.array(np.hstack((self.x, delta_x_All)))
         self.state[0] = self.x[0]
         self.state[1] = self.x[1]
-        self.state[2] = self.t
-        # self.state[3] = self.delta_x_dott
-        # self.state[4] = self.xd_dot2
+        self.state[2] = self.delta_x
+        self.state[3] = self.delta_x_dot
+        self.state[4] = self.xd_dot2
         return self.state
 
 
